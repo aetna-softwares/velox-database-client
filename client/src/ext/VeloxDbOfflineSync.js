@@ -870,27 +870,13 @@
     };
 
     function syncSchema(callback) {
-        this.getSchema(function(err, schema){
+        this.constructor.prototype.getSchema.bind(this)(function (err, schema) {
             if (err) { return callback(err); }
-            this.constructor.prototype.searchFirst.bind(this)("velox_db_version", {}, function (err, distantVersion) {
-                if (err) { return callback(err); }
-                if (!schema || Number(schema.__version.version) < Number(distantVersion.version)) {
-                    delete this.schema ;
-                    this.constructor.prototype.getSchema.bind(this)(function (err, schema) {
-                        if (err) { return callback(err); }
-                        storage.schema = schema;
-                        localStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
-                        sessionStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
-                        callback();
-                    }.bind(this));
-                } else {
-                    //schema did not changed
-                    callback();
-                }
-            }.bind(this));
+            storage.schema = schema;
+            localStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
+            sessionStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
+            callback();
         }.bind(this));
-
-
     }
 
     function syncTables(tablesToSync, localVersions, pCallback) {

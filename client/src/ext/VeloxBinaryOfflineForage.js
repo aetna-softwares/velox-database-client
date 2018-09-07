@@ -6,6 +6,7 @@
     } else if (typeof define === 'function' && define.amd) {
         define(['VeloxScriptLoader'], factory);
     } else {
+        console.log("Load forage offline binary storage") ;
         global.VeloxServiceClient.setOfflineBinaryStorageEngine(factory(global.veloxScriptLoader));
     }
 }(this, (function (VeloxScriptLoader) {
