@@ -574,9 +574,16 @@
             return callback("Connection too instable to sync with server") ;
         }
         var start = new Date(new Date().getTime()+lapse);
-        
+        var pingStart = new Date().getTime() ;
         this.client.ajax("syncGetTime", "POST", {date: start}, function (err, lapseServer) {
             if(err){ return callback(err);}
+
+            var pingEnd = new Date().getTime() ;
+
+            var pingTime = pingEnd - pingStart ;
+            if(pingTime > 700){
+                return callback("Connection is too slow to sync with server. Ping = "+pingTime+"ms") ;
+            }
 
             if(Math.abs(lapseServer) < 500){
                 //accept a 500ms difference, the purpose is to distinguish who from 2 offline users did modif the first
@@ -705,6 +712,9 @@
                     }
 
                     search.table_name = tables;
+
+                    
+
                     //get the version of tables in offline storage
                     storage.search("velox_modif_table_version", search, function (err, localTablesVersions) {
                         if (err) {
@@ -712,8 +722,19 @@
                             return callback(err);
                         }
 
+                        var timeouted = false;
+                        var startTime = new Date().getTime() ;
+                        var timerTooSlow = setTimeout(function(){
+                            timeouted = true;
+                            syncing = false;
+                            return callback("No answer after 1000ms, network too slow to sync");
+                        }, 1000) ;
                         //get the version of tables on server
                         this.constructor.prototype.search.bind(this)("velox_modif_table_version", search, function (err, distantTablesVersions) {
+                            if(timeouted){ return; }
+                            clearTimeout(timerTooSlow) ;
+                            console.log("Sync ping is "+(new Date().getTime()-startTime)+"ms") ;
+
                             if (err) {
                                 syncing = false;
                                 return callback(err);
