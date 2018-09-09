@@ -891,8 +891,13 @@
     };
 
     function syncSchema(callback) {
+        var saveSchema = this.schema ;
+        this.schema = null;
         this.constructor.prototype.getSchema.bind(this)(function (err, schema) {
-            if (err) { return callback(err); }
+            if (err) { 
+                this.schema = saveSchema ;
+                return callback(err); 
+            }
             storage.schema = schema;
             localStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
             sessionStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
