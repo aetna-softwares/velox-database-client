@@ -290,7 +290,7 @@
     VeloxDatabaseClient.prototype.transactionalChanges = function(changeSet, callback){
         this._checkSchema(function(err){
             if(err){ return callback(err); }
-            this.client.ajax(this.dbEntryPoint+"transactionalChanges", "POST", changeSet, "json", callback) ;    
+            this.client.ajax(this.dbEntryPoint+"transactionalChanges", "POST", {changes: JSON.stringify(changeSet)}, "multipart", callback) ;    
         }.bind(this)) ;
     };
 
