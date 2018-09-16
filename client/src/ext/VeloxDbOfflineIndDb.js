@@ -167,6 +167,12 @@
             tx.removeWhere(table, conditions, done) ;
         }, callback) ;
     };
+    
+    VeloxDbOfflineIndDb.prototype.updateWhere = function (table, conditions, callback) {
+        this.tx([table], "readwrite", function(tx, done){
+            tx.updateWhere(table, conditions, done) ;
+        }, callback) ;
+    };
 
     VeloxDbOfflineIndDb.prototype.transactionalChanges = function (changeSet, callback) {
         if(changeSet.length === 0){
@@ -467,6 +473,34 @@
             records.forEach(function(r){
                 promises.push(new Promise(function(resolve, reject){
                     this.remove(table, r, function(err){
+                        if(err){ return reject(err) ;}
+                        resolve() ;
+                    }) ;
+                }.bind(this))) ;
+            }.bind(this)) ;
+        }.bind(this)) ;
+
+        Promise.all(promises).then(function(){
+            callback() ;
+        }).catch(function(err){
+            callback(err) ;
+        }) ;
+    };
+
+    VeloxDbOfflineIndDbTransaction.prototype.updateWhere = function (table, record, conditions, callback) {
+        var promises = [] ;
+        this.search(table, conditions, function(err, records){
+            if(err){
+                return callback(err) ;
+            }
+            records.forEach(function(fullRecord){
+                promises.push(new Promise(function(resolve, reject){
+                    Object.keys(record).forEach(function(k){
+                        fullRecord[k] = record[k] ;
+                    }) ;
+                    this.tx([table], "readwrite", function(tx, done){
+                        tx.update(table, fullRecord, done) ;
+                    }, function(err){
                         if(err){ return reject(err) ;}
                         resolve() ;
                     }) ;

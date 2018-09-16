@@ -468,8 +468,15 @@
     //TODO check schema to have foreign key and check consistence, if the FK is wrong sync will fail afterward
     extension.extendsObj.removeWhere = function (table, conditions, callback) {
         doOperation(this, "removeWhere", arguments,  function(done){
-            saveOfflineChange([{ action: "removeWhere", table: table, conditions: conditions }]);
+            saveOfflineChange([{ action: "removeWhere", table: table, record: conditions }]);
             storage.removeWhere(table, conditions, done);
+        }, callback) ;
+    };
+
+    extension.extendsObj.updateWhere = function (table, values, conditions, callback) {
+        doOperation(this, "updateWhere", arguments,  function(done){
+            saveOfflineChange([{ action: "updateWhere", table: table, record: {values: values, conditions: conditions} }]);
+            storage.updateWhere(table, values, conditions, done);
         }, callback) ;
     };
 

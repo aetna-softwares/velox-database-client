@@ -144,6 +144,29 @@
         if(callback) {callback(null, result);}
         return {record : result} ;
     };
+    
+    VeloxDbOfflineLoki.prototype.updateWhere = function (table, record, conditions, callback) {
+        var coll = this.getCollection(table) ;
+        var existingRecords = coll.find(this._pkSearch(table, conditions));
+        var results = [] ;
+        existingRecords.forEach(function(existingRecord){
+            Object.keys(record).forEach(function(k){
+                existingRecord[k] = record[k] ;
+            }) ;
+            try {
+                existingRecord.velox_version_record++;
+                existingRecord.velox_version_date = new Date();
+                coll.update(existingRecord);
+            } catch (err) {
+                if(callback) {callback(err);}
+                return {err: err};
+            }
+            var result = this._sanatizeRecord(existingRecord) ;
+            results.push(result) ;
+        }) ;
+        if(callback) {callback(null, results);}
+        return {record : results} ;
+    };
 
     VeloxDbOfflineLoki.prototype.remove = function (table, pkOrRecord, callback) {
         try {
@@ -193,6 +216,10 @@
                 var result = this.removeWhere(change.table, change.record) ;
                 if (result.err) { return callback(result.err); }
                 results.push({ action: "removeWhere", table: change.table, record: change.record });
+            } else if (change.action === "updateWhere") {
+                var result = this.updateWhere(change.table, change.record.values, change.record.conditions) ;
+                if (result.err) { return callback(result.err); }
+                results.push({ action: "updateWhere", table: change.table, record: change.record });
             } else {
                 var result = this.getByPk(change.table, change.record);
                 if (result.err) { return callback(result.err); }
