@@ -56,11 +56,9 @@
         this.schema = options.schema;
         this.importLibIfNeeded(function (err) {
             if (err) { return callback(err); }
-            if (!this.loki) {
-                var dbname = (options.prefix || "") + "velox-offline";
-                if (!this.lokiadapter) {
-                    this.lokiadapter = new window.LokiIndexedAdapter(dbname);
-                }
+            var dbname = (options.prefix || "") + "velox-offline";
+            if (!this.loki || this.loki.__velox_dbname !== dbname) {
+                this.lokiadapter = new window.LokiIndexedAdapter(dbname);
                 this.loki = new this.lokijs(dbname, {
                     autoload: true,
                     autoloadCallback: function () {
@@ -70,6 +68,7 @@
                     autosaveInterval: 10000,
                     adapter: this.lokiadapter
                 });
+                this.loki.__velox_dbname = dbname ;
             } else {
                 callback();
             }
@@ -473,7 +472,7 @@
                             }catch(e){}
                         }else if(value === null || value === undefined){
                             rec[col.name] = [] ;
-                        }else{
+                        }else if(!Array.isArray(rec[col.name])){
                             rec[col.name] = [rec[col.name]] ;
                         }
                     }

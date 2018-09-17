@@ -345,12 +345,12 @@
         }
         prepare.bind(instance)(function (err) {
             if (err) { return callbackDone(err); }
-            syncStrategy.before.bind(instance)({action: action, args: args}, function(err){
+            syncStrategy.before.bind(instance)({action: action, args: args, currentUser: currentUser}, function(err){
                 if (err) { return callbackDone(err); }
                 callbackDo(function(err){
                     if (err) { return callbackDone(err); }
                     var results = Array.prototype.slice.call(arguments) ;
-                    syncStrategy.after.bind(instance)({action: action, args: args},function(err){
+                    syncStrategy.after.bind(instance)({action: action, args: args, currentUser: currentUser},function(err){
                         if (err) { return callbackDone(err); }
                         callbackDone.apply(null, results) ;
                     }) ;
