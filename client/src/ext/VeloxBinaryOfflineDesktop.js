@@ -224,7 +224,6 @@ offlineDesktop.restoreEntries = function(entries, callback){
             var filepath = path.join(storagePath,entry.path) ;
             mkdirs(path.dirname(filepath), function(err){
                 if(err){ return reject(err) ;}
-                console.log("data/buffer",entry.data, entry.data.constructor, entry.data instanceof ArrayBuffer) ;
                 fs.writeFile(filepath, new Buffer(entry.data.buffer), function(err){
                     if(err){ return reject(err) ;}
                     resolve() ;

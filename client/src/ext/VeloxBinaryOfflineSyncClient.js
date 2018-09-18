@@ -648,13 +648,10 @@
             if (err) { return callback(err); }
             VeloxScriptLoader.load(JZIP_LIB, function (err) {
                 if (err) { return callback(err); }
-                console.log("load zip file") ;
                 window.JSZip.loadAsync(zipBuffer).then(function (zip) {
-                    console.log("zip file loaded") ;
                     var entries = [] ;
                     var promises = [] ;
                     zip.forEach(function (relativePath, file){
-                        console.log("file in zip", relativePath) ;
                         if(!file.dir){
                             promises.push(file.async("arraybuffer").then(function (buffer) {
                                 entries.push({
@@ -665,10 +662,8 @@
                         }
                     });
                     Promise.all(promises).then(function(){
-                        console.log("start restore entries", entries) ;
                         storage.restoreEntries(entries, function(err){
                             if(err){ return callback(err) ;}
-                            console.log("end restore entries") ;
                             callback() ;
                         }) ;
                     }).catch(function(err){
