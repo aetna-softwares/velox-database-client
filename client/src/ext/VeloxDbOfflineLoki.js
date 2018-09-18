@@ -653,6 +653,22 @@
         }
     };
 
+    VeloxDbOfflineLoki.prototype.backup = function (callback) {
+        this.loki.saveDatabase(function(){
+            this.lokiadapter.loadDatabase(this.loki.filename, function(dbString){
+                callback(null, dbString) ;
+            }) ;
+        }.bind(this)) ;
+    };
+    
+    VeloxDbOfflineLoki.prototype.restore = function(dbString, callback) {
+        this.lokiadapter.saveDatabase(this.loki.filename, dbString, function(err){
+            if(err){ return callback(err) ;}
+            this.loki.loadDatabase({}, function(){
+                callback(null) ;
+            }) ;
+        }.bind(this)) ;
+    };
 
     return new VeloxDbOfflineLoki();
 })));

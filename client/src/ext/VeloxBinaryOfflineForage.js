@@ -197,5 +197,32 @@
         }.bind(this));
     } ;
 
+    VeloxBinaryOfflineForage.prototype.getEntries = function(callback){
+        var entries = [] ;
+        this.localforage.iterate(function(value, key) {
+            entries.push({
+                path: key,
+                data: value
+            }) ;
+        }).then(function() {
+            callback(null, entries) ;
+        }).catch(function(err) {
+            callback(err);
+        });
+    } ;
+
+    VeloxBinaryOfflineForage.prototype.restoreEntries = function(entries, callback){
+        var promises = [] ;
+        entries.forEach(function(entry){
+            this.localforage.setItem(entry.path, entry.data) ;
+        }.bind(this)) ;
+
+        Promise.all(promises).then(function() {
+            callback() ;
+        }).catch(function(err) {
+            callback(err);
+        });
+    } ;
+
     return new VeloxBinaryOfflineForage();
 })));

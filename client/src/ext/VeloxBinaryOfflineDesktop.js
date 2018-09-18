@@ -178,4 +178,66 @@ offlineDesktop.watchFile = function(binaryRecord, callbackChanged){
     }) ;
 } ;
 
+function addEntry(entries, parent, fileEntries, callback){
+    if(fileEntries.length === 0){ return callback() ;}
+    var fileEntry = fileEntries.pop() ;
+    
+    fs.lstat(path.join(parent, fileEntry), function(err, stats){
+        if(err){ return callback(err) ;}
+        if(stats.isDirectory()){
+            fs.readdir(path.join(parent, fileEntry),  function(err, files){
+                if(err){ return callback(err) ;}
+                addEntry(entries, path.join(parent, fileEntry), files, function(err){
+                    if(err){ return callback(err) ;}
+                    addEntry(entries, parent, fileEntries, callback) ;
+                }) ;
+            }) ;
+        }else{
+            fs.readFile(path.join(parent, fileEntry), function(err, buffer){
+                if(err){ return callback(err) ;}
+                entries.push({
+                    path : path.join(parent, fileEntry).substring(storagePath.length),
+                    data : buffer
+                }) ;
+                addEntry(entries, parent, fileEntries, callback) ;
+            }) ;
+        }
+    }) ;
+}
+
+offlineDesktop.getEntries = function(callback){
+    var entries = [] ;
+
+    fs.readdir(storagePath, function(err, files){
+        if(err){ return callback(err) ;}
+        addEntry(entries, storagePath, files, function(err){
+            if(err){ return callback(err) ;}
+            callback(null, entries) ;
+        }) ;
+    }) ;
+} ;
+
+offlineDesktop.restoreEntries = function(entries, callback){
+    var promises = [] ;
+    entries.forEach(function(entry){
+        promises.push(new Promise(function(resolve, reject){
+            var filepath = path.join(storagePath,entry.path) ;
+            mkdirs(path.dirname(filepath), function(err){
+                if(err){ return reject(err) ;}
+                console.log("data/buffer",entry.data, entry.data.constructor, entry.data instanceof ArrayBuffer) ;
+                fs.writeFile(filepath, new Buffer(entry.data.buffer), function(err){
+                    if(err){ return reject(err) ;}
+                    resolve() ;
+                }) ;
+            }) ;
+        }));
+    }.bind(this)) ;
+
+    Promise.all(promises).then(function() {
+        callback() ;
+    }).catch(function(err) {
+        callback(err);
+    });
+} ;
+
 module.exports = offlineDesktop ;

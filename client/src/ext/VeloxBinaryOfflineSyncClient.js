@@ -8,7 +8,7 @@
     } else {
         global.VeloxServiceClient.registerExtension(factory(global.veloxScriptLoader));
     }
-}(this, (function () {
+}(this, (function (VeloxScriptLoader) {
     'use strict';
 
     /**
@@ -26,6 +26,18 @@
             });
         }
     }
+
+    var JSZIP_VERSION = "3.1.5" ;
+    var JZIP_LIB =[
+        {
+            name: "jszip",
+            type: "js",
+            version: JSZIP_VERSION,
+            cdn: "https://cdnjs.cloudflare.com/ajax/libs/jszip/$VERSION/jszip.min.js",
+            bowerPath: "jszip/dist/jszip.min.js",
+            npmPath: "jszip/dist/jszip.min.js",
+        }
+    ] ;
 
     /**
      * Tables settings
@@ -88,6 +100,8 @@
         client.readBinary.download = download.bind(client);
         client.readBinary.url = url.bind(client);
         client.readBinary.urlBase64 = urlBase64.bind(client);
+        client.backupBinary = backupBinary.bind(client);
+        client.restoreBinary = restoreBinary.bind(client);
 
         callback();
     };
@@ -606,6 +620,66 @@
         }
     }
 
+
+    function backupBinary(callback){
+        prepare.bind(this)(function (err) {
+            if (err) { return callback(err); }
+            VeloxScriptLoader.load(JZIP_LIB, function (err) {
+                if (err) { return callback(err); }
+                
+                storage.getEntries(function(err, entries){
+                    if (err) { return callback(err); }
+                    var zip = new window.JSZip();
+                    entries.forEach(function(entry){
+                        zip.file(entry.path, entry.data);
+                    }) ;
+                    zip.generateAsync({type:"blob"}).then(function(content) {
+                        callback(null, content) ;
+                    }).catch(function(err){
+                        callback(err) ;
+                    });
+                }) ;
+            }.bind(this));
+        }.bind(this));
+    }
+
+    function restoreBinary(zipBuffer, callback){
+        prepare.bind(this)(function (err) {
+            if (err) { return callback(err); }
+            VeloxScriptLoader.load(JZIP_LIB, function (err) {
+                if (err) { return callback(err); }
+                console.log("load zip file") ;
+                window.JSZip.loadAsync(zipBuffer).then(function (zip) {
+                    console.log("zip file loaded") ;
+                    var entries = [] ;
+                    var promises = [] ;
+                    zip.forEach(function (relativePath, file){
+                        console.log("file in zip", relativePath) ;
+                        if(!file.dir){
+                            promises.push(file.async("arraybuffer").then(function (buffer) {
+                                entries.push({
+                                    path: relativePath,
+                                    data : buffer
+                                }) ;
+                            }));
+                        }
+                    });
+                    Promise.all(promises).then(function(){
+                        console.log("start restore entries", entries) ;
+                        storage.restoreEntries(entries, function(err){
+                            if(err){ return callback(err) ;}
+                            console.log("end restore entries") ;
+                            callback() ;
+                        }) ;
+                    }).catch(function(err){
+                        callback(err) ;
+                    }) ;
+                }).catch(function(err){
+                    callback(err) ;
+                });
+            }.bind(this));
+        }.bind(this));
+    }
 
 
     return extension;

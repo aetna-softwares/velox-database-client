@@ -350,5 +350,100 @@
     } ;
 
 
+    function addEntry(entries, parent, fileEntries, callback){
+        if(fileEntries.length === 0){ return callback() ;}
+        var fileEntry = fileEntries.pop() ;
+        
+        if(fileEntry.isDirectory){
+            var reader = fileEntry.createReader();
+            reader.readEntries(function (files) {
+                addEntry(entries, parent?(parent+"/"+fileEntry.name):fileEntry.name, files, function(err){
+                    if(err){ return callback(err) ;}
+                    addEntry(entries, parent, fileEntries, callback) ;
+                }) ;
+            }, function(err){
+                if(err){ return callback(err) ;}
+            }) ;
+        }else{
+
+            fileEntry.file(function (file) {
+                var reader = new FileReader();
+        
+                reader.onload = function () {
+                    var data = reader.result;
+                    entries.push({
+                        path : parent?(parent+"/"+fileEntry.name):fileEntry.name,
+                        data : data
+                    }) ;
+                    addEntry(entries, parent, fileEntries, callback) ;
+                };
+
+                reader.onerror = function (e) {
+                    callback(e) ;
+                };
+        
+                reader.readAsArrayBuffer(file);
+        
+            }, function(err){
+                return callback(err) ;
+            });
+        }
+    }
+
+    offlineCordova.getEntries = function(callback){
+        var entries = [] ;
+
+        getFs(function (err, fs) {
+            if(err){ return callback(err) ;}
+
+            var reader = fs.createReader();
+            reader.readEntries(
+            function (files) {
+                addEntry(entries, "", files, function(err){
+                    if(err){ return callback(err) ;}
+                    callback(null, entries) ;
+                }) ;
+            },
+            function (err) {
+                if(err){ return callback(err) ;}
+            });
+        });
+    } ;
+
+    offlineCordova.restoreEntries = function(entries, callback){
+
+        getFs(function (err, fs) {
+            if(err){ return callback(err) ;}
+
+            var promises = [] ;
+            entries.forEach(function(entry){
+                promises.push(new Promise(function(resolve, reject){
+                    var recordpath = entry.path;
+                    var dirname = recordpath.substring(0, recordpath.lastIndexOf("/")) ;
+                    console.log("create dir "+dirname) ;
+                    mkdirs(fs, dirname, function(err){
+                        if(err){ return callback(err) ;}
+                        fs.root.getFile(recordpath, {create: true, exclusive: false}, function(fileEntry) {
+                            writeFile(fileEntry, entry.data, function(err){
+                                if(err){ return callback(err) ;}
+                                console.log("written file ",recordpath) ;
+                                resolve() ;
+                            }) ;
+                        }, function(err){
+                            reject(err) ;
+                        });
+                    });
+                }));
+            }.bind(this)) ;
+
+            Promise.all(promises).then(function() {
+                callback() ;
+            }).catch(function(err) {
+                callback(err);
+            });
+        });
+    } ;
+
+
     return offlineCordova ;
 })));

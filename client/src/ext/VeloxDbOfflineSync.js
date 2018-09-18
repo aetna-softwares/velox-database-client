@@ -926,6 +926,20 @@
         
     }
 
+    extension.extendsProto.backup = function (callback) {
+        prepare.bind(this)(function (err) {
+            if (err) { return callback(err); }
+
+            storage.backup(callback) ;
+        }.bind(this));
+    };
+
+    extension.extendsProto.restore = function (dbString, callback) {
+        prepare.bind(this)(function (err) {
+            if (err) { return callback(err); }
+            storage.restore(dbString, callback) ;
+        }.bind(this));
+    };
     
     return extension;
 
