@@ -83,7 +83,9 @@
         var res;
         try{
             console.log("before crypto");
-            res = (window.crypto||window.msCrypto).subtle.digest("SHA-256", buffer) ;
+            var crypto = (window.crypto||window.msCrypto) ;
+            var subtle = crypto.subtle || crypto.webkitSubtle ;
+            res = subtle.digest("SHA-256", buffer) ;
             console.log("after crypto compl ?", res);
         }catch(e){
             callback(e) ;
