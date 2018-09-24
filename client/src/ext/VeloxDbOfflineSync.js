@@ -41,6 +41,8 @@
     var LOCAL_SCHEMA_KEY = "velox_offline_schema";
 
     var currentUser = null;
+    var isOffline = true;
+    var offlineStatusListeners = [] ;
 
     function saveOfflineChange(changes) {
         var localChanges = getOfflineChange();
@@ -295,15 +297,15 @@
 
     
 
-    function isOffline(tableName, action){
+    function isTableOffline(tableName, action){
         if(Array.isArray(tableName)){
             //transaction changes list
             return tableName.every(function(change){
                 if(change.action){
-                    return isOffline(change.table, change.action) ;
+                    return isTableOffline(change.table, change.action) ;
                 }else{
                     //action auto, need insert/getByPk/update
-                    return isOffline(change.table, "insert") && isOffline(change.table, "read")  && isOffline(change.table, "update");
+                    return isTableOffline(change.table, "insert") && isTableOffline(change.table, "read")  && isTableOffline(change.table, "update");
                 }
             }) ;
         }
@@ -332,14 +334,14 @@
         }
     }
 
-    extension.extendsGlobal.isTableOffline = isOffline ;
+    extension.extendsGlobal.isTableOffline = isTableOffline ;
 
     function doOperation(instance, action, args, callbackDo, callbackDone){
         if(action !== "multiread"){
             var ope = "read" ;
             if(action === "insert"){ ope = "insert" ;}
             if(action === "update"){ ope = "update" ;}
-            if(!isOffline(args[0], ope)){
+            if(!isTableOffline(args[0], ope)){
                 return instance.constructor.prototype[action].apply(instance, args) ;
             }
         }
@@ -545,7 +547,7 @@
             }
             reads[k].name = k;
 
-            if(!getAllTableNames(reads[k]).every(function(t){ return isOffline(t); })){
+            if(!getAllTableNames(reads[k]).every(function(t){ return isTableOffline(t); })){
                 onlineReads[k] = reads[k] ;
                 return  ;
             }
@@ -653,6 +655,23 @@
         return tableToForceRefresh ;
     } ;
 
+    function setOfflineStatus(offline){
+        if(isOffline !== offline){
+            offlineStatusListeners.forEach(function(listener){
+                listener(offline) ;
+            }) ;
+        }
+        isOffline = offline ;
+    }
+
+    extension.extendsProto.addOfflineStatusListener = function(listener){
+        offlineStatusListeners.push(listener) ;
+    } ;
+
+    extension.extendsProto.isOffline = function(){
+        return isOffline ;
+    } ;
+
     var syncing = false;
     /**
      * Sync data with distant server.
@@ -662,14 +681,22 @@
      * @param {string[]} [tables] list of tables to sync. default : all tables
      * @param {function(Error, object)} callback called on finish, give stats about what has been sync
      */
-    extension.extendsProto.sync = function (tables, callback) {
+    extension.extendsProto.sync = function (tables, realCallback) {
         if (typeof (tables) === "function") {
-            callback = tables;
+            realCallback = tables;
             tables = null;
         }
-        if(!callback){
-            callback = function(){} ;
+        if(!realCallback){
+            realCallback = function(){} ;
         }
+        var callback = function(err){
+            if(err){
+                setOfflineStatus(true) ;
+            }else{
+                setOfflineStatus(false) ;
+            }
+            realCallback.apply(null, arguments) ;
+        } ;
         prepare.bind(this)(function (err) {
             if (err) { return callback(err); }
 
@@ -702,7 +729,7 @@
                     if(!tables){
                         //no table give, add all offline tables
                         tables = Object.keys(this.schema).filter(function(tableName){
-                            return tableName !== "__version" && tableName !== "velox_sync_log" && tableName !== "velox_crash_report" && isOffline(tableName) ;
+                            return tableName !== "__version" && tableName !== "velox_sync_log" && tableName !== "velox_crash_report" && isTableOffline(tableName) ;
                         }) ;
 
                         //case of view that is composed by many table, must sync if any of used tables is modified
@@ -792,7 +819,7 @@
 
                             //keep only the offline tables
                             tablesToSync = tablesToSync.filter(function(tableName){
-                                return isOffline(tableName) ;
+                                return isTableOffline(tableName) ;
                             }) ;
 
 
@@ -903,11 +930,13 @@
         this.constructor.prototype.getSchema.bind(this)(function (err, schema) {
             if (err) { 
                 this.schema = saveSchema ;
+                setOfflineStatus(true) ;
                 return callback(err); 
             }
             storage.schema = schema;
             localStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
             sessionStorage.setItem(LOCAL_SCHEMA_KEY, JSON.stringify(schema));
+            setOfflineStatus(false) ;
             callback();
         }.bind(this));
     }
