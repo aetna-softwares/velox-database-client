@@ -93,12 +93,16 @@
         });
 
         client.syncBinary = syncBinary.bind(client);
+        client._saveBinary = client.saveBinary;
         client.saveBinary = saveBinary.bind(client);
         if (!client.readBinary) {
             client.readBinary = {};
         }
+        client.readBinary._download = client.readBinary.download;
         client.readBinary.download = download.bind(client);
+        client.readBinary._url = client.readBinary.url ;
         client.readBinary.url = url.bind(client);
+        client.readBinary._urlBase64 = client.readBinary.urlBase64 ;
         client.readBinary.urlBase64 = urlBase64.bind(client);
         client.backupBinary = backupBinary.bind(client);
         client.restoreBinary = restoreBinary.bind(client);
@@ -217,6 +221,9 @@
      * Override the download function. will write the file then sync with server
      */
     function saveBinary(file, binaryRecord, callback) {
+        if(!storage){
+            return this._saveBinary(file, binaryRecord, callback) ;
+        }
         var settings = getBinarySettings(binaryRecord);
         if (!settings.cached) {
             //no cache, use standard function
@@ -259,6 +266,9 @@
         if(typeof(filename) === "function"){
             callback = filename;
             filename = null;
+        }
+        if (!storage) {
+            return this.readBinary._url(recordOrUid, filename, callback) ;
         }
         this.__velox_database.getByPk("velox_binary", recordOrUid, function (err, binaryRecord) {
             if (err) { return callback(err); }
@@ -348,6 +358,9 @@
     }
     
     function urlBase64(recordOrUid, callback) {
+        if (!storage) {
+            return this.readBinary._urlBase64(recordOrUid, callback) ;
+        }
         this.__velox_database.getByPk("velox_binary", recordOrUid, function (err, binaryRecord) {
             if (err) { return callback(err); }
             if (!binaryRecord) { return callback("Binary record " + JSON.stringify(recordOrUid) + " does not exists"); }
@@ -387,6 +400,9 @@
         if(typeof(filename) === "function"){
             callback = filename;
             filename = null;
+        }
+        if (!storage) {
+            return this.readBinary._download(recordOrUid, filename, callback) ;
         }
         this.__velox_database.getByPk("velox_binary", recordOrUid, function (err, binaryRecord) {
             if (err) { return callback(err); }
