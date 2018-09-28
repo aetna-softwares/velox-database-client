@@ -424,7 +424,7 @@
                 }else if(val && typeof(val) === "object" && val.constructor === Date){
                     val = val.toISOString() ;
                 }
-                if(col.type === "varchar"){
+                if(col.type === "varchar" || col.type === "textarea" || col.type === "html"){
                     if(val && val.length > col.size){
                         val = val.substring(0, col.size) ;
                     }
