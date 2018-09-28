@@ -424,6 +424,11 @@
                 }else if(val && typeof(val) === "object" && val.constructor === Date){
                     val = val.toISOString() ;
                 }
+                if(col.type === "varchar"){
+                    if(val && val.length > col.size){
+                        val = val.substring(0, col.size) ;
+                    }
+                }
                 preparedRecord[col.name] = val ;
             }
         }) ;
