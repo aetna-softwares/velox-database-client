@@ -487,6 +487,15 @@
         }, callback) ;
     };
 
+    extension.extendsObj.transactionalChangesNoCache = function (changeSet, callback) {
+        this.constructor.prototype.transactionalChanges.bind(this)(changeSet, function(err, results){
+            if(err){ return callback(err) ;}
+            this.sync(changeSet.map(function(c){ return c.table ;}), function(err){
+                if(err){ return callback(err) ;}
+                callback(null, results) ;
+            }) ;
+        }.bind(this)) ;
+    } ;
     extension.extendsObj.transactionalChanges = function (changeSet, callback) {
         doOperation(this, "transactionalChanges",arguments,  function(done){
             this.getSchema(function(err, schema){
