@@ -102,7 +102,7 @@
         client.readBinary.download = download.bind(client);
         client.readBinary._url = client.readBinary.url ;
         client.readBinary.url = url.bind(client);
-        client.readBinary._urlBase64 = client.readBinary.urlBase64 ;
+        client.readBinary._urlBase64 = client.readBinary.url ;
         client.readBinary.urlBase64 = urlBase64.bind(client);
         client.backupBinary = backupBinary.bind(client);
         client.restoreBinary = restoreBinary.bind(client);
