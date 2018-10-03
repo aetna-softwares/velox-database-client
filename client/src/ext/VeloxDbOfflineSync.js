@@ -627,7 +627,7 @@
             calculateTimeLapse.bind(this)(0, 0, function(err, lapse){
                 if(err){ return callback(err) ;}
                 localChanges[0].timeLapse = lapse ;
-                this.client.ajax("sync", "POST", {changes: localChanges[0]}, "json", function (err, result) {
+                this.client.ajax("sync", "POST", {changes: JSON.stringify(localChanges[0])}, "multipart", function (err, result) {
                     if (err) {
                         return callback(err);
                     }
