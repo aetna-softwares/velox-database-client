@@ -311,7 +311,7 @@
                 console.log('Open file: ' + filepath);
                 cordova.plugins.fileOpener2.open(
                     fileEntry.toURL(), 
-                    'application/pdf', 
+                    binaryRecord.mime_type, 
                     { 
                         error : function(e) { 
                             console.log('Error status: ' + e.status + ' - Error message: ' + e.message);
