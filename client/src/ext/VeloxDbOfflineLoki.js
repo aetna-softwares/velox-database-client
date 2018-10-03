@@ -589,7 +589,7 @@
         Object.keys(search).forEach(function (k) {
             var val = search[k];
 
-            if (val && val.operator === "between" && Array.isArray(val.value)) {
+            if (val && val.ope === "between" && Array.isArray(val.value)) {
                 var between1 = {};
                 between1[k] = { $gte: val.value[0] };
                 var between2 = {};
