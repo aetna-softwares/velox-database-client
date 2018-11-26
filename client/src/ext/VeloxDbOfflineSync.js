@@ -425,7 +425,7 @@
                     val = val.toISOString() ;
                 }
                 if(col.type === "varchar" || col.type === "textarea" || col.type === "html"){
-                    if(val && val.length > col.size){
+                    if(val && col.size && val.length > col.size){
                         val = val.substring(0, col.size) ;
                     }
                 }
