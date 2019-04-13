@@ -528,6 +528,10 @@
         }, callback) ;
     };
 
+    extension.extendsObj.getStorage = function () {
+        return storage ;
+    };
+
     extension.extendsObj.searchFirst = function (table, search, joinFetch, orderBy, callback) {
         doOperation(this, "searchFirst", arguments, function(done){
             storage.searchFirst(table, search, joinFetch, orderBy, done);
